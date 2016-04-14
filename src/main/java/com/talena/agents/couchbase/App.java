@@ -32,7 +32,7 @@ public class App {
         String nodes[] = getNodes(args[2]);
 
         testConnect(authInfo, nodes);
-      } else if (args[0].compareToIgnoreCase("getBuckets") == 0) { 
+      } else if (args[0].compareToIgnoreCase("getBuckets") == 0) {
         if (args.length != 3) {
           throw new UsageException("getBuckets");
         }
@@ -41,6 +41,19 @@ public class App {
         String nodes[] = getNodes(args[2]);
 
         getBuckets(authInfo, nodes);
+      } else if (args[0].compareToIgnoreCase("dcpEnabled") == 0) {
+        if (args.length != 3) {
+          throw new UsageException("dcpEnabled");
+        }
+
+        AuthInfo authInfo = getAuthInfo(args[1]);
+        String nodes[] = getNodes(args[2]);
+
+        if (isDcpEnabled(authInfo, nodes)) {
+          System.out.println("DCP is enabled for the cluster.");
+        } else {
+          System.out.println("DCP is NOT enabled for the cluster.");
+        }
       } else if (args[0].compareToIgnoreCase("getDoc") == 0) {
         if (args.length < 4) {
           throw new UsageException("getDoc");
@@ -91,6 +104,16 @@ public class App {
     } catch (InvalidPasswordException e) {
       System.out.println("Invalid password.");
     }
+  }
+
+  private static boolean isDcpEnabled(
+      final AuthInfo authInfo, final String[] nodes) {
+    logger.info(authInfo);
+    logger.info(nodes.length + " nodes.");
+
+    CouchbaseClusterService clusterSrv = new CouchbaseClusterService(nodes);
+
+    return clusterSrv.isDcpEnabled(authInfo.getName(), authInfo.getPassword());
   }
 
   private static void getBuckets(

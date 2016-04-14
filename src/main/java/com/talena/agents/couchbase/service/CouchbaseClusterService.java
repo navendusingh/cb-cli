@@ -9,6 +9,7 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.cluster.BucketSettings;
 import com.couchbase.client.java.cluster.ClusterManager;
+import com.couchbase.client.java.util.features.CouchbaseFeature;
 
 public class CouchbaseClusterService {
   private final static Logger logger = Logger.getLogger(
@@ -20,7 +21,8 @@ public class CouchbaseClusterService {
     this.nodes = nodes.clone();
   }
 
-  public List<BucketSettings> getBuckets(final String userName, final String password) {
+  public List<BucketSettings> getBuckets(
+      final String userName, final String password) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     ClusterManager mgrCluster = cbCluster.clusterManager(userName, password);
 
@@ -31,5 +33,13 @@ public class CouchbaseClusterService {
     logger.info("Found " + buckets.size() + " bucket(s).");
 
     return buckets;
+  }
+
+  public boolean isDcpEnabled(
+      final String userName, final String password) {
+    Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
+    ClusterManager mgrCluster = cbCluster.clusterManager(userName, password);
+
+    return mgrCluster.info().checkAvailable(CouchbaseFeature.DCP);
   }
 }
