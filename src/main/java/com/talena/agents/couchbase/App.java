@@ -5,9 +5,12 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.couchbase.client.java.cluster.BucketSettings;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.error.InvalidPasswordException;
 import com.talena.agents.couchbase.exception.UsageException;
+import com.talena.agents.couchbase.service.CouchbaseClusterService;
 import com.talena.agents.couchbase.service.CouchbaseDocumentService;
 import com.talena.agents.couchbase.service.CouchbaseTestService;
 
@@ -29,6 +32,15 @@ public class App {
         String nodes[] = getNodes(args[2]);
 
         testConnect(authInfo, nodes);
+      } else if (args[0].compareToIgnoreCase("getBuckets") == 0) { 
+        if (args.length != 3) {
+          throw new UsageException("getBuckets");
+        }
+
+        AuthInfo authInfo = getAuthInfo(args[1]);
+        String nodes[] = getNodes(args[2]);
+
+        getBuckets(authInfo, nodes);
       } else if (args[0].compareToIgnoreCase("getDoc") == 0) {
         if (args.length < 4) {
           throw new UsageException("getDoc");
@@ -76,6 +88,22 @@ public class App {
       }
     } catch (final UsageException e) {
       printUsage(e.toString());
+    } catch (InvalidPasswordException e) {
+      System.out.println("Invalid password.");
+    }
+  }
+
+  private static void getBuckets(
+      final AuthInfo authInfo, final String[] nodes) {
+    logger.info(authInfo);
+    logger.info(nodes.length + " nodes.");
+
+    CouchbaseClusterService clusterSrv = new CouchbaseClusterService(nodes);
+    List<BucketSettings> buckets = clusterSrv.getBuckets(
+        authInfo.getName(), authInfo.getPassword());
+
+    for (BucketSettings bucket : buckets) {
+      System.out.println(bucket);
     }
   }
 
