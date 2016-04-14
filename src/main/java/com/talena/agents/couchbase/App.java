@@ -25,20 +25,20 @@ public class App {
           throw new UsageException("testConnect");
         }
 
-        AuthInfo bucket = getAuthInfo(args[1]);
+        AuthInfo authInfo = getAuthInfo(args[1]);
         String nodes[] = getNodes(args[2]);
 
-        testConnect(bucket, nodes);
+        testConnect(authInfo, nodes);
       } else if (args[0].compareToIgnoreCase("getDoc") == 0) {
         if (args.length < 4) {
           throw new UsageException("getDoc");
         }
 
-        AuthInfo bucket = getAuthInfo(args[1]);
+        AuthInfo authInfo = getAuthInfo(args[1]);
         String nodes[] = getNodes(args[2]);
 
         if (args.length == 4) {
-          JsonDocument doc = getDocument(bucket, nodes, args[3], false);
+          JsonDocument doc = getDocument(authInfo, nodes, args[3], false);
 
           if (doc == null) {
             System.out.println("Id: " + args[3] + ". Document not found.");
@@ -52,7 +52,7 @@ public class App {
             ids.add(args[i]);
           }
 
-          List<JsonDocument> docs = getDocuments(bucket, nodes, ids, false);
+          List<JsonDocument> docs = getDocuments(authInfo, nodes, ids, false);
 
           for (JsonDocument doc : docs) {
             System.out.println(doc);
@@ -63,15 +63,15 @@ public class App {
           throw new UsageException("saveDoc");
         }
 
-        AuthInfo bucket = getAuthInfo(args[1]);
+        AuthInfo authInfo = getAuthInfo(args[1]);
         String nodes[] = getNodes(args[2]);
 
         JsonObject obj = JsonObject.empty().put("id", "001");
         JsonDocument doc = JsonDocument.create("001", 2, obj);
 
-        saveDocument(bucket, nodes, doc, true);
+        saveDocument(authInfo, nodes, doc, true);
 
-        JsonDocument d = getDocument(bucket, nodes, "001", false);
+        JsonDocument d = getDocument(authInfo, nodes, "001", false);
         System.out.println(d);
       }
     } catch (final UsageException e) {
@@ -80,10 +80,10 @@ public class App {
   }
 
   private static int saveDocument(
-      final AuthInfo bucket, final String[] nodes,
+      final AuthInfo authInfo, final String[] nodes,
       final JsonDocument doc, boolean isAsync) {
     CouchbaseDocumentService docSrv = new CouchbaseDocumentService(
-        bucket, nodes);
+        authInfo, nodes);
     int result = 0;
 
     if (isAsync) {
@@ -96,13 +96,13 @@ public class App {
   }
 
   private static List<JsonDocument> getDocuments(
-      final AuthInfo bucket, final String[] nodes,
+      final AuthInfo authInfo, final String[] nodes,
       final List<String> ids, boolean isAsync) {
-    logger.info(bucket);
+    logger.info(authInfo);
     logger.info(nodes.length + " nodes.");
 
     CouchbaseDocumentService docSrv = new CouchbaseDocumentService(
-        bucket, nodes);
+        authInfo, nodes);
 
     List<JsonDocument> docs = null;
 
@@ -116,13 +116,13 @@ public class App {
   }
 
   private static JsonDocument getDocument(
-      final AuthInfo bucket, final String[] nodes,
+      final AuthInfo authInfo, final String[] nodes,
       final String id, boolean isAsync) {
-    logger.info(bucket);
+    logger.info(authInfo);
     logger.info(nodes.length + " nodes.");
 
     CouchbaseDocumentService docSrv = new CouchbaseDocumentService(
-        bucket, nodes);
+        authInfo, nodes);
 
     JsonDocument doc = null;
 
@@ -136,11 +136,11 @@ public class App {
   }
 
   private static void testConnect(
-      final AuthInfo bucket, final String[] nodes) {
-    logger.info(bucket);
+      final AuthInfo authInfo, final String[] nodes) {
+    logger.info(authInfo);
     logger.info(nodes.length + " nodes.");
 
-    CouchbaseTestService testSrv = new CouchbaseTestService(bucket, nodes);
+    CouchbaseTestService testSrv = new CouchbaseTestService(authInfo, nodes);
     logger.info("No of vBuckets is: " + testSrv.getVBucketsCount());
   }
 
@@ -151,12 +151,12 @@ public class App {
       throw new UsageException("authInfo");
     }
 
-    AuthInfo bucket = new AuthInfo(splits[0], "");
+    AuthInfo authInfo = new AuthInfo(splits[0], "");
     if (splits.length == 2) {
-      bucket.setPassword(splits[1]);
+      authInfo.setPassword(splits[1]);
     }
 
-    return bucket;
+    return authInfo;
   }
 
   private static String[] getNodes(final String str) {
