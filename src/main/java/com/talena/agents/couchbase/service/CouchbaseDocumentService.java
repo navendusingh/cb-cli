@@ -10,7 +10,7 @@ import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.JsonDocument;
-import com.talena.agents.couchbase.BucketAuthInfo;
+import com.talena.agents.couchbase.AuthInfo;
 
 import rx.Observable;
 import rx.functions.Func1;
@@ -19,19 +19,19 @@ public class CouchbaseDocumentService {
   private final static Logger logger = Logger.getLogger(
       CouchbaseDocumentService.class);
 
-  private BucketAuthInfo bucketAuthInfo;
+  private AuthInfo bucketAuthInfo;
   private String[] nodes;
 
   public CouchbaseDocumentService(
-      final BucketAuthInfo bucketAuthInfo, final String[] nodes) {
-    this.bucketAuthInfo = new BucketAuthInfo(bucketAuthInfo);
+      final AuthInfo bucketAuthInfo, final String[] nodes) {
+    this.bucketAuthInfo = new AuthInfo(bucketAuthInfo);
     this.nodes = nodes.clone();
   }
 
   public JsonDocument getDocument(final String id) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
     JsonDocument doc = bucket.get(id);
 
     cbCluster.disconnect();
@@ -42,7 +42,7 @@ public class CouchbaseDocumentService {
   public List<JsonDocument> getDocuments(final List<String> ids) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
     List<JsonDocument> docs = new ArrayList<JsonDocument>();
 
     for (String id: ids) {
@@ -61,7 +61,7 @@ public class CouchbaseDocumentService {
   public int saveDocument(JsonDocument doc) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
 
     JsonDocument d = bucket.upsert(doc);
     logger.info("Created: " + d);
@@ -74,7 +74,7 @@ public class CouchbaseDocumentService {
   public JsonDocument getDocumentAsync(final String id) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     final Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
 
     List<JsonDocument> docs = Observable
         .just(id)
@@ -101,7 +101,7 @@ public class CouchbaseDocumentService {
   public List<JsonDocument> getDocumentsAsync(final List<String> ids) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     final Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
 
     List<JsonDocument> docs = Observable
         .from(ids)
@@ -122,7 +122,7 @@ public class CouchbaseDocumentService {
   public int saveDocumentAsync(JsonDocument doc) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     final Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
 
     List<JsonDocument> docsCreated = Observable
       .just(doc)
@@ -145,7 +145,7 @@ public class CouchbaseDocumentService {
   public int saveDocumentsAsync(List<JsonDocument> docs) {
     Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
     final Bucket bucket = cbCluster.openBucket(
-        bucketAuthInfo.getBucketName(), bucketAuthInfo.getPassword());
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
 
     List<JsonDocument> docsCreated = Observable
       .from(docs)
