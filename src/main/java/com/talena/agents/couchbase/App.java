@@ -138,9 +138,9 @@ public class App {
     int result = 0;
 
     if (isAsync) {
-      result = docSrv.saveDocumentAsync(doc);
+      result = docSrv.saveJsonDocumentAsync(doc);
     } else {
-      result = docSrv.saveDocument(doc);
+      result = docSrv.saveJsonDocument(doc);
     }
 
     return result;
@@ -158,9 +158,9 @@ public class App {
     List<JsonDocument> docs = null;
 
     if (isAsync) {
-      docs = docSrv.getDocumentsAsync(ids);
+      docs = docSrv.getJsonDocumentsAsync(ids);
     } else {
-      docs = docSrv.getDocuments(ids);
+      docs = docSrv.getJsonDocuments(ids);
     }
 
     return docs;
@@ -178,9 +178,9 @@ public class App {
     JsonDocument doc = null;
 
     if (isAsync) {
-      doc = docSrv.getDocumentAsync(id);
+      doc = docSrv.getJsonDocumentAsync(id);
     } else {
-      doc = docSrv.getDocument(id);
+      doc = docSrv.getJsonDocument(id);
     }
 
     return doc;
