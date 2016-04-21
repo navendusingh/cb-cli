@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.document.Document;
 import com.couchbase.client.java.document.JsonDocument;
 import com.talena.agents.couchbase.AuthInfo;
 
@@ -151,6 +152,52 @@ public class CouchbaseDocumentService {
       .from(docs)
       .flatMap(new Func1<JsonDocument, Observable<JsonDocument>>() {
         public Observable<JsonDocument> call(JsonDocument doc) {
+          return bucket.async().upsert(doc);
+        }
+      })
+      .toList()
+      .toBlocking()
+      .single();
+
+    cbCluster.disconnect();
+
+    logger.info("Created " + docsCreated.size() + " documents.");
+
+    return docsCreated.size();
+  }
+
+  public <T extends Document> int saveDocumentAsync(final T doc) {
+    Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
+    final Bucket bucket = cbCluster.openBucket(
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
+
+    List<T> docsCreated = Observable
+      .just(doc)
+      .flatMap(new Func1<T, Observable<T>>() {
+        public Observable<T> call(T doc) {
+          return bucket.async().upsert(doc);
+        }
+      })
+      .toList()
+      .toBlocking()
+      .single();
+
+    cbCluster.disconnect();
+
+    logger.info("Created " + docsCreated.size() + " documents.");
+
+    return docsCreated.size();
+  }
+
+  public <T extends Document> int saveDocumentsAsync(final List<T> doc) {
+    Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
+    final Bucket bucket = cbCluster.openBucket(
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
+
+    List<T> docsCreated = Observable
+      .from(doc)
+      .flatMap(new Func1<T, Observable<T>>() {
+        public Observable<T> call(T doc) {
           return bucket.async().upsert(doc);
         }
       })
