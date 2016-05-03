@@ -53,7 +53,12 @@ public class CouchbaseLongRecord extends CouchbaseShortRecord {
       long partitionUuid) {
     CouchbaseLongRecord rec = new CouchbaseLongRecord();
     rec.set(msg);
-    rec.content = msg.content().array();
+    if (msg.content().hasArray()) {
+      rec.content = msg.content().array();
+    } else {
+      rec.content = new byte[msg.content().capacity()];
+      msg.content().getBytes(msg.content().readerIndex(), rec.content);
+    }
     rec.expiration = msg.expiration();
     rec.revisionseqno = msg.revisionSequenceNumber();
     rec.lockTime = msg.lockTime();
