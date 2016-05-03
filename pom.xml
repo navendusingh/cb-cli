@@ -45,5 +45,10 @@
       <artifactId>rxjava-math</artifactId>
       <version>0.21.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>2.2.0</version>
+    </dependency>
   </dependencies>
 </project>
