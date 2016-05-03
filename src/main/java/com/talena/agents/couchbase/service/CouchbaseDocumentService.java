@@ -6,12 +6,17 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.kv.UpsertRequest;
+import com.couchbase.client.deps.io.netty.buffer.ByteBuf;
+import com.couchbase.client.deps.io.netty.buffer.Unpooled;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.Document;
 import com.couchbase.client.java.document.JsonDocument;
 import com.talena.agents.couchbase.AuthInfo;
+import com.talena.agents.couchbase.commons.CouchbaseLongRecord;
 
 import rx.Observable;
 import rx.functions.Func1;
@@ -210,5 +215,43 @@ public class CouchbaseDocumentService {
     logger.info("Created " + docsCreated.size() + " documents.");
 
     return docsCreated.size();
+  }
+
+  public boolean saveDocumentAsync(final String key, final ByteBuf content) {
+    Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
+    final Bucket bucket = cbCluster.openBucket(
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
+
+    bucket
+      .core()
+      .send(new UpsertRequest(key, content, bucket.name()))
+      .toBlocking()
+      .single();
+
+    cbCluster.disconnect();
+
+    return true;
+  }
+
+  public int saveDocumentsAsync(Iterable<CouchbaseLongRecord> docs) {
+    Cluster cbCluster = CouchbaseCluster.create(Arrays.asList(nodes));
+    final Bucket bucket = cbCluster.openBucket(
+        bucketAuthInfo.getName(), bucketAuthInfo.getPassword());
+
+    int count = Observable
+      .from(docs)
+      .flatMap(new Func1<CouchbaseLongRecord, Observable<CouchbaseResponse>>(){
+        public Observable<CouchbaseResponse> call(CouchbaseLongRecord doc) {
+          return bucket.core().send(new UpsertRequest(
+              doc.key(), Unpooled.copiedBuffer(doc.content()), bucket.name()));
+        }})
+      .toList()
+      .count()
+      .toBlocking()
+      .single();
+
+    cbCluster.disconnect();
+
+    return count;
   }
 }

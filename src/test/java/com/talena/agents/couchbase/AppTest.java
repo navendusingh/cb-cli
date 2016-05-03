@@ -1,11 +1,12 @@
 package com.talena.agents.couchbase;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import com.couchbase.client.deps.io.netty.buffer.Unpooled;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.transcoder.JsonTranscoder;
 import com.talena.agents.couchbase.service.CouchbaseDocumentService;
 
 import junit.framework.Test;
@@ -57,5 +58,44 @@ public class AppTest extends TestCase {
     int count = docSrv.saveDocumentsAsync(docs);
 
     assertTrue(count == 2);
+  }
+
+  public void testSaveJsonDocumentUsingUpsertRequest() {
+    String id = "004";
+
+    JsonTranscoder jt = new JsonTranscoder();
+
+    JsonObject obj = JsonObject.empty().put("id", id);
+    JsonDocument doc = JsonDocument.create("004", obj);
+    boolean result = false;
+    try {
+      result = docSrv.saveDocumentAsync(id, jt.jsonObjectToByteBuf(obj));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    assertTrue(result == true);
+
+    JsonDocument docFetched = docSrv.getJsonDocument(id);
+
+    System.out.println(docFetched.toString());
+
+    assertTrue(docFetched.content().toString().compareTo(
+        doc.content().toString()) == 0);
+  }
+
+  public void testSaveDocumentUsingUpsertRequest() {
+    String id = "005";
+
+    boolean result = false;
+    String str = "Hello World";
+    try {
+      result = docSrv.saveDocumentAsync(
+          id, Unpooled.copiedBuffer(str.getBytes()));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    assertTrue(result == true);
   }
 }
