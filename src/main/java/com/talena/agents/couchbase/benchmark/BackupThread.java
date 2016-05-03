@@ -1,5 +1,6 @@
 package com.talena.agents.couchbase.benchmark;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -12,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.MutationMessage;
 import com.couchbase.client.core.message.dcp.RemoveMessage;
+import com.talena.agents.couchbase.commons.CouchbaseLongRecord;
 import com.talena.agents.couchbase.core.ClosedPartition;
 import com.talena.agents.couchbase.core.CouchbaseFacade;
 import com.talena.agents.couchbase.core.DCPEndpoint;
@@ -35,6 +37,8 @@ public class BackupThread extends Thread {
   private long endTime = 0;
   private FileChannel fcOut = null;
   private AtomicLong mutationCount;
+
+  private DataOutputStream outMutations;
 
   private long flushCounter = 0;
   private final long flushLimit = (10L * 20L * 1024L * 1024L);
@@ -80,6 +84,9 @@ public class BackupThread extends Thread {
     File backupFile = new File(backupPath + "backup.data.full");
 
     try {
+      outMutations = new DataOutputStream(
+          new FileOutputStream(backupFile.getAbsolutePath() + ".mut"));
+
       fcOut = new FileOutputStream(backupFile).getChannel();
     } catch (FileNotFoundException e1) {
       e1.printStackTrace();
@@ -131,6 +138,9 @@ public class BackupThread extends Thread {
       if (fcOut != null) {
         fcOut.force(true);
         fcOut.close();
+
+        outMutations.flush();
+        outMutations.close();
       }
     } catch (Exception e) {
       System.out.println(e);
@@ -158,7 +168,12 @@ public class BackupThread extends Thread {
       msg.content().getBytes(0, fcOut, msg.content().capacity());
       flushCounter += msg.content().capacity();
 
+      CouchbaseLongRecord lr = CouchbaseLongRecord.create(msg, partition);
+      lr.write(outMutations);
+
       if (flushCounter >= flushLimit) {
+        outMutations.flush();
+
         fcOut.force(true);
         flushCounter = 0;
       }
