@@ -1,5 +1,6 @@
 package com.talena.agents.couchbase.core;
 
+import com.couchbase.client.core.message.cluster.CloseBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
@@ -54,6 +55,14 @@ public class CouchbaseFacade {
 
     logger.info(String.format("Opening bucket: %s", bucket));
     ClusterFacadeSingleton.core().send(new OpenBucketRequest(bucket, password))
+      .timeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+      .toBlocking()
+      .single();
+  }
+
+  public void closeBucket() {
+    logger.info(String.format("Closing bucket: %s", bucket));
+    ClusterFacadeSingleton.core().send(new CloseBucketRequest(bucket))
       .timeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
       .toBlocking()
       .single();
