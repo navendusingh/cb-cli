@@ -1,13 +1,20 @@
 package com.talena.agents.couchbase.core;
 
+import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.message.cluster.CloseBucketRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
 
+import rx.functions.Func1;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -99,5 +106,38 @@ public class CouchbaseFacade {
    */
   public DCPEndpoint dcpEndpoint() {
     return new DCPEndpoint(ClusterFacadeSingleton.core(), bucket, password);
+  }
+
+  public List<String> getClusterNodes() {
+    final List<String> nodes = new ArrayList<String>();
+
+    ClusterFacadeSingleton.core()
+      .<GetClusterConfigResponse>send(new GetClusterConfigRequest())
+      .map(new Func1<GetClusterConfigResponse, Integer>() {
+        @Override
+        public Integer call(GetClusterConfigResponse response) {
+          CouchbaseBucketConfig config =
+            (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
+
+          try {
+            String str;
+            int i = 0;
+            do {
+              str = config.nodeAtIndex(i).hostname().getHostName();
+              ++i;
+              if (str != null) {
+                nodes.add(str);
+              }
+            } while (str != null);
+          } catch (IndexOutOfBoundsException e) {
+          }
+
+          return config.numberOfPartitions();
+          }
+        })
+      .toBlocking()
+      .single();
+
+    return nodes;
   }
 }

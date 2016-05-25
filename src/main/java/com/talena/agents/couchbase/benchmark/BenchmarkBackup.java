@@ -1,6 +1,7 @@
 package com.talena.agents.couchbase.benchmark;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.talena.agents.couchbase.core.CouchbaseFacade;
@@ -74,9 +75,34 @@ public class BenchmarkBackup {
     CouchbaseFacade cbFacade = new CouchbaseFacade(nodes, bucket, "");
     cbFacade.openBucket();
 
-    Map<Short, Long> highSeqNos = cbFacade.currentHighSeqnos();
+    Map<Short, Long> highSeqNos = new HashMap<Short, Long>();
     short changedPartitions[] = new short[1024];
     int changedPartitionsCount = 0;
+
+    List<String> clusterNodes = cbFacade.getClusterNodes();
+    cbFacade.closeBucket();
+
+    for (String clusterNode : clusterNodes) {
+      String[] arr = new String[1];
+
+      System.out.println("Fetching high sequence number for node: "
+        + clusterNode);
+
+      arr[0] = clusterNode;
+      cbFacade = new CouchbaseFacade(arr, bucket, "");
+      cbFacade.openBucket();
+
+      Map<Short, Long> seqNos = cbFacade.currentHighSeqnos();
+      int count = 0;
+      for (Map.Entry<Short, Long> seqNo : seqNos.entrySet()) {
+        if (seqNo.getValue() != 0) {
+          highSeqNos.put(seqNo.getKey(), seqNo.getValue());
+          ++count;
+        }
+      }
+      System.out.println("Added " + count + " entries to highSeqNos.");
+      cbFacade.closeBucket();
+    }
 
     System.out.println("vBuckets high sequence numbers are ...");
 
