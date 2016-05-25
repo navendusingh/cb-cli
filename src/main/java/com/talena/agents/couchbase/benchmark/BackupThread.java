@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.MutationMessage;
@@ -42,6 +43,8 @@ public class BackupThread extends Thread {
 
   private long flushCounter = 0;
   private final long flushLimit = (10L * 20L * 1024L * 1024L);
+
+  private AtomicReference<DCPEndpoint> dcp;
 
   public long getMutationsReceived() {
     return mutationCount.get();
@@ -92,14 +95,15 @@ public class BackupThread extends Thread {
       e1.printStackTrace();
     }
 
-    DCPEndpoint dcp = cbFacade.dcpEndpoint();
-    dcp.openConnection(this.getName(), new HashMap<String, String>());
+    dcp = new AtomicReference<DCPEndpoint>();
+    dcp.compareAndSet(null, cbFacade.dcpEndpoint());
+    dcp.get().openConnection(this.getName(), new HashMap<String, String>());
 
     mutationCount = new AtomicLong(0);
 
     startTime = System.currentTimeMillis();
 
-    dcp.streamPartitions(specs)
+    dcp.get().streamPartitions(specs)
     .toBlocking()
     .forEach(new Action1<DCPRequest>() {
       public void call(DCPRequest dcpRequest) {
@@ -107,14 +111,14 @@ public class BackupThread extends Thread {
       }
     });
 
-    dcp.closedPartitions()
+    dcp.get().closedPartitions()
     .toBlocking()
     .forEach(new Action1<ClosedPartition>() {
       public void call(ClosedPartition p) {
       }
     });
 
-    dcp.openPartitions()
+    dcp.get().openPartitions()
     .toBlocking()
     .forEach(new Action1<OpenPartition>() {
       public void call(OpenPartition p) {
@@ -123,7 +127,7 @@ public class BackupThread extends Thread {
 
     endTime = System.currentTimeMillis();
 
-    long mCount = MathObservable.sumLong(dcp
+    long mCount = MathObservable.sumLong(dcp.get()
         .stats()
         .map(new Func1<PartitionStats, Long>() {
           public Long call(PartitionStats s) {
@@ -185,7 +189,7 @@ public class BackupThread extends Thread {
 
     bytesCount += msg.content().capacity();
     msg.content().release();
-    msg.connection().consumed(msg);
+    dcp.get().consumed(msg);
   }
 
   private void handleRemove(final RemoveMessage msg, short partition) {

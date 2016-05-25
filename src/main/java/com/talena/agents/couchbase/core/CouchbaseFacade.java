@@ -104,6 +104,6 @@ public class CouchbaseFacade {
    * Creates a new DCP endpoint for the given bucket.
    */
   public DCPEndpoint dcpEndpoint() {
-    return new DCPEndpoint(core, bucket);
+    return new DCPEndpoint(core, bucket, password);
   }
 }

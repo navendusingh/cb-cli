@@ -31,13 +31,18 @@ public class DCPEndpoint {
 
   private final ClusterFacade core;
   private final String bucket;
+  private final String password;
   private final Map<Short, AbstractPartition> state;
   private final Map<Short, PartitionStats> stats;
   private AtomicReference<DCPConnection> connection;
 
-  public DCPEndpoint(final ClusterFacade core, final String bucket) {
+  public DCPEndpoint(
+      final ClusterFacade core,
+      final String bucket,
+      final String password) {
     this.core = core;
     this.bucket = bucket;
+    this.password = password;
     this.state = new HashMap<Short, AbstractPartition>();
     this.stats = new HashMap<Short, PartitionStats>();
   }
@@ -212,7 +217,7 @@ public class DCPEndpoint {
           return core.send(
             new StreamRequestRequest(s.id(), s.uuid(), s.startSeqno(),
               s.endSeqno(), s.snapshotStartSeqno(), s.snapshotEndSeqno(),
-              bucket));
+              bucket, password, connection.get()));
         }
       })
       .doOnNext(new Action1<StreamRequestResponse>() {
@@ -323,5 +328,9 @@ public class DCPEndpoint {
 
   private Observable<AbstractPartition> allPartitions() {
     return Observable.from(state.values());
+  }
+
+  public void consumed(final MutationMessage msg) {
+    connection.get().consumed(msg);
   }
 }
